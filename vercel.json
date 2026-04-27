@@ -13,11 +13,7 @@
     },
     {
       "source": "/",
-      "destination": "/public/azcon-one.html"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/public/$1"
+      "destination": "/azcon-one.html"
     }
   ]
 }
