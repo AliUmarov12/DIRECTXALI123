@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DirectX AI · AZCON</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<!-- Marked.js for Markdown parsing -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<style>
+:root {
+  --bg: #061014; --panel: rgba(11,29,38,0.7);
+  --accent: #3AE2CE; --accent2: #FF6B2B; --gold: #F0B429;
+  --white: #fff; --ink2: #8EA7B4; --ink3: #5C7A8B;
+  --border: rgba(255,255,255,0.06);
+  --f-disp: 'Bebas Neue',sans-serif;
+  --f-mono: 'Space Mono',monospace;
+  --f-body: 'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--f-body);background:radial-gradient(circle at 40% 30%,#0F2A36,var(--bg) 70%);color:var(--white);display:flex}
+
+/* SIDEBAR */
+aside{width:240px;min-width:240px;background:rgba(6,16,20,.9);backdrop-filter:blur(20px);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 20px;height:100vh;position:sticky;top:0}
+.logo{font-family:var(--f-body);font-weight:700;font-size:26px;letter-spacing:-0.02em;margin-bottom:28px;cursor:pointer}
+.logo span{color:var(--accent)}
+.nav-item{padding:11px 16px;margin-bottom:6px;border-radius:10px;color:var(--ink2);font-weight:500;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.2s}
+.nav-item svg{width:16px;height:16px;opacity:.7;flex-shrink:0}
+.nav-item:hover{background:rgba(58,226,206,.08);color:var(--accent)}
+.nav-item.active{background:rgba(58,226,206,.12);color:var(--accent);border:1px solid rgba(58,226,206,.2)}
+.nav-item.active svg{opacity:1}
+.sign-out{color:var(--accent2)!important;margin-top:auto}
+
+/* CHAT INTERFACE */
+main{flex:1;display:flex;flex-direction:column;padding:0;overflow:hidden;position:relative}
+
+.chat-header {
+  padding: 24px 40px;
+  background: rgba(6,16,20,0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 10;
+}
+.ai-avatar {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  background: rgba(58,226,206,0.1);
+  border: 1px solid rgba(58,226,206,0.3);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent);
+  box-shadow: 0 0 15px rgba(58,226,206,0.2);
+}
+.chat-header-text h1 { font-family: var(--f-disp); font-size: 28px; letter-spacing: 0.04em; margin-bottom: 2px; }
+.chat-header-text p { font-family: var(--f-mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; }
+
+.chat-box {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.chat-box::-webkit-scrollbar { width: 6px; }
+.chat-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+/* BUBBLES */
+.message { display: flex; max-width: 80%; }
+.message.ai { align-self: flex-start; }
+.message.user { align-self: flex-end; flex-direction: row-reverse; }
+
+.msg-avatar {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 16px;
+}
+.message.ai .msg-avatar { background: rgba(58,226,206,0.1); color: var(--accent); border: 1px solid rgba(58,226,206,0.2); }
+.message.user .msg-avatar { background: rgba(255,255,255,0.05); color: var(--ink2); }
+
+.msg-bubble {
+  padding: 16px 20px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.message.ai .msg-bubble {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--white);
+  border-top-left-radius: 4px;
+}
+.message.user .msg-bubble {
+  background: rgba(58,226,206,0.15);
+  border: 1px solid rgba(58,226,206,0.3);
+  color: var(--white);
+  border-top-right-radius: 4px;
+}
+
+/* Markdown styling inside AI bubble */
+.msg-bubble p { margin-bottom: 10px; }
+.msg-bubble p:last-child { margin-bottom: 0; }
+.msg-bubble strong { color: var(--accent); font-weight: 700; }
+.msg-bubble ul, .msg-bubble ol { margin-left: 20px; margin-bottom: 10px; }
+.msg-bubble li { margin-bottom: 4px; }
+.msg-bubble code { background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; font-family: var(--f-mono); font-size: 12px; color: var(--gold); }
+
+/* INPUT AREA */
+.chat-input-area {
+  padding: 24px 40px;
+  background: rgba(6,16,20,0.9);
+  border-top: 1px solid var(--border);
+}
+.input-wrapper {
+  display: flex;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 8px;
+  transition: 0.2s;
+}
+.input-wrapper:focus-within {
+  border-color: rgba(58,226,206,0.4);
+  box-shadow: 0 0 15px rgba(58,226,206,0.1);
+}
+.chat-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 12px 16px;
+  color: var(--white);
+  font-family: var(--f-body);
+  font-size: 15px;
+  outline: none;
+}
+.chat-input::placeholder { color: var(--ink3); }
+.send-btn {
+  background: var(--accent);
+  color: #061014;
+  border: none;
+  border-radius: 12px;
+  width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.send-btn:hover { background: #2dcfbb; transform: scale(1.05); }
+.send-btn:disabled { background: var(--ink3); cursor: not-allowed; transform: none; }
+
+/* Typing Indicator */
+.typing-indicator { display: none; padding: 16px 20px; }
+.typing-indicator span { display: inline-block; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; margin-right: 4px; animation: bounce 1.4s infinite ease-in-out both; }
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="logo" onclick="location.href='azcon-one.html'">Direct<span>X</span></div>
+  <div class="nav-item active" onclick="location.href='azcon-one.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Ecosystem
+  </div>
+  <div class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+    Smart Route
+  </div>
+  <div class="nav-item" onclick="location.href='azal-flights.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 19-7z"/></svg>
+    Transit &amp; Flights
+  </div>
+  <div class="nav-item" onclick="location.href='esim.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+    eSIM Services
+  </div>
+  <div class="nav-item" onclick="location.href='wallet.html'">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>
+    Unified Wallet
+  </div>
+  <div class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+    Tracing Intelligence
+  </div>
+  <div class="nav-item sign-out">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Sign Out
+  </div>
+</aside>
+
+<main>
+  <div class="chat-header">
+    <div class="ai-avatar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+    </div>
+    <div class="chat-header-text">
+      <h1>DirectX AI</h1>
+      <p>Powered by Gemini Flash & You.com Live</p>
+    </div>
+  </div>
+
+  <div class="chat-box" id="chat-box">
+    <!-- Initial Greeting -->
+    <div class="message ai">
+      <div class="msg-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+      </div>
+      <div class="msg-bubble">
+        Hello, I am DirectX AI, your intelligent assistant for the AZCON ecosystem. I can help you with flights, smart routes, wallet transactions, and eSIM services. How can I assist you today?
+      </div>
+    </div>
+    
+    <div class="typing-indicator" id="typing-indicator">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <div class="chat-input-area">
+    <div class="input-wrapper">
+      <input type="text" id="chat-input" class="chat-input" placeholder="Type your message here..." autocomplete="off" onkeydown="if(event.key==='Enter') sendMessage()">
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</main>
+
+<script>
+  let chatHistory = [];
+  const chatBox = document.getElementById('chat-box');
+  const chatInput = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('send-btn');
+  const typingIndicator = document.getElementById('typing-indicator');
+
+  // Configure marked options to prevent XSS but allow basic styling
+  marked.setOptions({ breaks: true });
+
+  function scrollToBottom() {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function appendMessage(role, text) {
+    const isAi = role === 'ai';
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${role}`;
+    
+    const avatarSvg = isAi 
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+
+    // Use marked for AI to render markdown formatting, plain text for user
+    const content = isAi ? marked.parse(text) : text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    msgDiv.innerHTML = `
+      <div class="msg-avatar">${avatarSvg}</div>
+      <div class="msg-bubble">${content}</div>
+    `;
+    
+    // Insert before typing indicator
+    chatBox.insertBefore(msgDiv, typingIndicator);
+    scrollToBottom();
+  }
+
+  async function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+
+    // UI Updates
+    chatInput.value = '';
+    chatInput.disabled = true;
+    sendBtn.disabled = true;
+    
+    appendMessage('user', text);
+    typingIndicator.style.display = 'block';
+    scrollToBottom();
+
+    try {
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, history: chatHistory })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Server error');
+      }
+
+      // Add to history
+      chatHistory.push({ role: 'user', text });
+      chatHistory.push({ role: 'ai', text: data.reply });
+
+      typingIndicator.style.display = 'none';
+      appendMessage('ai', data.reply);
+      
+    } catch (err) {
+      typingIndicator.style.display = 'none';
+      appendMessage('ai', `**Error:** I'm having trouble connecting to my core servers right now. (${err.message})`);
+    } finally {
+      chatInput.disabled = false;
+      sendBtn.disabled = false;
+      chatInput.focus();
+    }
+  }
+</script>
+</body>
+</html>
